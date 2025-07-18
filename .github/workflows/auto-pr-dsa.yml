@@ -1,8 +1,9 @@
-name: Auto PR from dsa/* to main
+name: Create PR to main from dsa/*
 
 permissions:
   contents: write
   pull-requests: write
+
 
 on:
   push:
@@ -10,19 +11,38 @@ on:
       - 'dsa/**'
 
 jobs:
-  create_pr:
+  create-pull-request:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed to compare branches
 
-      - name: Create pull request only
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: main
-          head: ${{ github.ref_name }}            # source branch
-          title: "Auto PR: ${{ github.ref_name }} → main"
-          body: |
-            This PR was automatically generated from `${{ github.ref_name }}` to `main`.
+    - name: Set up Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
 
+    - name: Get branch name
+      id: extract_branch
+      run: |
+        echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+
+    - name: Check for commits not in main
+      id: check_diff
+      run: |
+        COMMITS=$(git rev-list --count origin/main..${{ steps.extract_branch.outputs.branch_name }})
+        echo "commits_ahead=$COMMITS" >> $GITHUB_OUTPUT
+
+    - name: Create Pull Request
+      if: steps.check_diff.outputs.commits_ahead != '0'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        base: main
+        head: ${{ steps.extract_branch.outputs.branch_name }}
+        title: "Auto PR: ${{ steps.extract_branch.outputs.branch_name }} → main"
+        body: "This pull request was automatically generated from changes in ${{ steps.extract_branch.outputs.branch_name }}"
+        delete-branch: false
+        draft: false
