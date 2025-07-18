@@ -1,4 +1,4 @@
-name: Create Pull Request for DSA Branches
+name: Auto PR from dsa/* to main
 
 permissions:
   contents: write
@@ -7,23 +7,29 @@ permissions:
 on:
   push:
     branches:
-      - 'dsa/**'  # Trigger only on push to dsa/ prefixed branches
+      - 'dsa/**'  # Trigger on any push to dsa/* branches
 
 jobs:
-  create-pr:
+  create-pull-request:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
-          base: main  # PR target base branch
-          branch: ${{ github.ref_name }}  # Source branch is the branch that triggered the workflow
-          title: "DSA: ${{ github.ref_name }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "sync: changes from ${{ github.ref_name }}"
+          title: "Auto PR: '${{ github.ref_name }}' → 'main'"
           body: |
-            This pull request contains DSA updates from branch **${{ github.ref_name }}**.
-            - Automatically created using GitHub Actions.
+            This pull request was automatically created from the branch `${{ github.ref_name }}` to `main`.
+
+            Please review and merge if everything looks good.
+          base: main
+          branch: ${{ github.ref_name }}
+          commit-mode: append  # Avoids force-push or rebase
           delete-branch: false
+
+
