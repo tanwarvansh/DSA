@@ -7,29 +7,22 @@ permissions:
 on:
   push:
     branches:
-      - 'dsa/**'  # Trigger on any push to dsa/* branches
+      - 'dsa/**'
 
 jobs:
-  create-pull-request:
+  create_pr:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Create Pull Request
+      - name: Create pull request only
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "sync: changes from ${{ github.ref_name }}"
-          title: "Auto PR: '${{ github.ref_name }}' → 'main'"
-          body: |
-            This pull request was automatically created from the branch `${{ github.ref_name }}` to `main`.
-
-            Please review and merge if everything looks good.
           base: main
-          branch: ${{ github.ref_name }}
-          commit-mode: append  # Avoids force-push or rebase
-          delete-branch: false
-
+          head: ${{ github.ref_name }}            # source branch
+          title: "Auto PR: ${{ github.ref_name }} → main"
+          body: |
+            This PR was automatically generated from `${{ github.ref_name }}` to `main`.
 
