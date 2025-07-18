@@ -11,38 +11,41 @@ on:
       - 'dsa/**'
 
 jobs:
-  create-pull-request:
+  create-pr:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Needed to compare branches
+        fetch-depth: 0  # Needed to compare history
 
     - name: Set up Git
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Get branch name
-      id: extract_branch
-      run: |
-        echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+    - name: Get current branch name
+      id: get_branch
+      run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
 
-    - name: Check for commits not in main
-      id: check_diff
+    - name: Check for new commits compared to main
+      id: check
       run: |
-        COMMITS=$(git rev-list --count origin/main..${{ steps.extract_branch.outputs.branch_name }})
-        echo "commits_ahead=$COMMITS" >> $GITHUB_OUTPUT
+        COMMITS=$(git rev-list --count origin/main..${{ steps.get_branch.outputs.branch }})
+        echo "ahead_by=$COMMITS" >> $GITHUB_OUTPUT
+
+    - name: Install GitHub CLI
+      run: sudo apt install -y gh
+
+    - name: Authenticate GitHub CLI
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
     - name: Create Pull Request
-      if: steps.check_diff.outputs.commits_ahead != '0'
-      uses: peter-evans/create-pull-request@v6
-      with:
-        base: main
-        head: ${{ steps.extract_branch.outputs.branch_name }}
-        title: "Auto PR: ${{ steps.extract_branch.outputs.branch_name }} → main"
-        body: "This pull request was automatically generated from changes in ${{ steps.extract_branch.outputs.branch_name }}"
-        delete-branch: false
-        draft: false
+      if: steps.check.outputs.ahead_by != '0'
+      run: |
+        gh pr create \
+          --base main \
+          --head ${{ steps.get_branch.outputs.branch }} \
+          --title "Auto PR: ${{ steps.get_branch.outputs.branch }} → main" \
+          --body "This PR was created automatically on push to ${{ steps.get_branch.outputs.branch }}."
