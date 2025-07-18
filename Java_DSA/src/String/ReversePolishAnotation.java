@@ -7,7 +7,9 @@ public class ReversePolishAnotation {
         // Example input in Reverse Polish Notation
         String[] tokens = {"10", "6", "9", "3", "+", "-11", "*", "/", "*", "17", "+", "5", "+"};
         
-        // Evaluate the expression and print the result
+        // Evaluate the expression and print the result 
+        // The question is that postfix expression is given in the form of an array of strings
+        // and we need to evaluate it using a stack.
         System.out.println(evalRPN(tokens));
     }
 
