@@ -49,3 +49,9 @@ jobs:
           --head ${{ steps.get_branch.outputs.branch }} \
           --title "Auto PR: ${{ steps.get_branch.outputs.branch }} → main" \
           --body "This PR was created automatically on push to ${{ steps.get_branch.outputs.branch }}."
+      
+    - name: Enable Auto-Merge
+      if: steps.check.outputs.ahead_by != '0'
+      run: |
+        PR_URL=$(gh pr view ${{ steps.get_branch.outputs.branch }} --json url -q .url)
+        gh pr merge "$PR_URL" --merge --auto
